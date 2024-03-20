@@ -1,13 +1,15 @@
 ##########################################################
-### UCDLW 2023 - Workshop Registration Analytics ###
+### UCDLW 2024 - Workshop Registration Analytics ###
 ##########################################################
 
 # META
 
-# Data source: UCDLW_2023_Registrations.csv
-# Dates for analysis: February 2023
+# Data source: UCDLW_2024_Registrations.csv
+# Dates for analysis: February 2024
 # Contributors: UCDLW Committee
-# Questions? Script prepared by: Pamela Reynolds (plreynolds@ucdavis.edu)
+# Questions? Script prepared by: 
+#         Pamela Reynolds (plreynolds@ucdavis.edu)
+#         Kat Koziar (katherine.koziar@ucr.edu, github: kekoziar) 
 ##########################################################
 
 # MANUAL PREPARATION
@@ -119,21 +121,38 @@ uniq.registrants <- length(unique(df$email))   # 1110
 # CREATE SUMMARY VARIABLES
   
 # Domain
-  df$domain<- as.factor(df$domain)
-  domain.math.cs<-sum(df$domain == "Mathematical and computational sciences", na.rm=TRUE)
-  domain.physical.sci<-sum(df$domain == "Physical sciences", na.rm=TRUE)
-  domain.life.sci<-sum(df$domain == "Life sciences", na.rm=TRUE)
-  domain.health.sci<-sum(df$domain == "Health sciences", na.rm=TRUE)
-  domain.soc.sci<-sum(df$domain == "Social sciences", na.rm=TRUE)
-  domain.humanities<-sum(df$domain == "Humanities", na.rm=TRUE)
+  df$domain<- as.factor(df$domain) #don't need this
+  domains <- c("Health sciences",
+               "Humanities",
+               "Life sciences",
+               "Mathematical and computational sciences",
+               "Physical sciences",
+               "Social sciences")
+
+############################
+# For domains 
+#  some registrants listed more than one domain. 
+#  to capture all of the data we use two variables. 
+#  
+#  This is unduplicated/not unique, 
+#   so unique registrant that registered for more than one workshop is counted twice
+#
+#   registrant_domain$total indicates total number of registrant that lists domain
+#   registrant_domain$exact indicates total number of registrant that only lists domain
+#
+############################
   
-  domain.all.health <- length(df$domain[df$domain %like% "Health sciences"])
-  domain.all.human <- length(df$domain[df$domain %like% "Humanities"])
-  domain.all.life <- length(df$domain[df$domain %like% "Life sciences"])
-  domain.all.math <- length(df$domain[df$domain %like% "Mathematical and computational sciences"])
-  domain.all.physical <- length(df$domain[df$domain %like% "Physical sciences"])
-  domain.all.social <- length(df$domain[df$domain %like% "Social sciences"])
-  
+  i <- 1
+  registrant_domain <- data.frame(total=vector("numeric", length=length(domains)), 
+                                  exact=vector("numeric", length=length(domains)), 
+                                  row.names = domains)
+  for(domain in domains){
+    registrant_domain$total[i] <- length(df$domain[df$domain %like% domain])
+    registrant_domain$exact[i] <- sum(df$domain == domain, na.rm=TRUE)
+    i <- i+1
+  }
+
+
 
 # Registrant Roles
   df$role<- as.factor(df$role)
