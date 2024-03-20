@@ -84,7 +84,7 @@ df$email.entity<-as.factor(df$email.entity) # returns ucdavis.edu, etc.
 
 # BASIC METRICS
 
-df.table<-as.data.frame(df)
+df.table<-as.data.frame(df) #why?
 
 # Total Number Workshops
 total.workshops<-length(unique(df$workshop))
@@ -107,10 +107,10 @@ uniq.registrants <- length(unique(df$email))   # 1110
   uniq.departments<-length(unique(df$department))
 
 # Unique Current Institutions
-  uniq.location=length(unique(df$location))
+  uniq.location <- length(unique(df$location))
 
 # Registrants per workshop by host
-  reg.by.workshop<-df %>% count(host, workshop)
+  reg.by.workshop<-df %>% count(hostuc, workshop)
 
 # Registrants per workshop by current institution
   reg.by.workshop.current<-df %>% count(workshop, location)
@@ -120,12 +120,20 @@ uniq.registrants <- length(unique(df$email))   # 1110
   
 # Domain
   df$domain<- as.factor(df$domain)
-  domain.math.cs<-sum(df$domain == "mathematical and computational sciences", na.rm=TRUE)
-  domain.physical.sci<-sum(df$domain == "physical sciences", na.rm=TRUE)
-  domain.life.sci<-sum(df$domain == "life sciences", na.rm=TRUE)
-  domain.health.sci<-sum(df$domain == "health sciences", na.rm=TRUE)
-  domain.soc.sci<-sum(df$domain == "social sciences", na.rm=TRUE)
-  domain.humanities<-sum(df$domain == "humanities", na.rm=TRUE)
+  domain.math.cs<-sum(df$domain == "Mathematical and computational sciences", na.rm=TRUE)
+  domain.physical.sci<-sum(df$domain == "Physical sciences", na.rm=TRUE)
+  domain.life.sci<-sum(df$domain == "Life sciences", na.rm=TRUE)
+  domain.health.sci<-sum(df$domain == "Health sciences", na.rm=TRUE)
+  domain.soc.sci<-sum(df$domain == "Social sciences", na.rm=TRUE)
+  domain.humanities<-sum(df$domain == "Humanities", na.rm=TRUE)
+  
+  domain.all.health <- length(df$domain[df$domain %like% "Health sciences"])
+  domain.all.human <- length(df$domain[df$domain %like% "Humanities"])
+  domain.all.life <- length(df$domain[df$domain %like% "Life sciences"])
+  domain.all.math <- length(df$domain[df$domain %like% "Mathematical and computational sciences"])
+  domain.all.physical <- length(df$domain[df$domain %like% "Physical sciences"])
+  domain.all.social <- length(df$domain[df$domain %like% "Social sciences"])
+  
 
 # Registrant Roles
   df$role<- as.factor(df$role)
@@ -136,11 +144,6 @@ uniq.registrants <- length(unique(df$email))   # 1110
   role.staff<-sum(df$role== "Staff" | df$role=="Professional Researcher", na.rm=TRUE)
   role.other<-sum(df$role=="Alumni" | df$role=="Other" | df$role=="Medical Resident", na.rm=TRUE)
 
-# Pronouns - NEEDS IMPROVEMENT
-df$pronouns<- as.factor(df$pronouns)
-pronoun.he<-sum(df$pronouns == "he/him/his", na.rm=TRUE)
-pronoun.she<-sum(df$pronouns == "she/her/hers", na.rm=TRUE)
-pronoun.they<-sum(df$pronouns == "they/them/theirs", na.rm=TRUE)
 
 # Overall Summary
 results<-data.frame(total.registrants, uniq.departments, email.academia, email.govt, email.other, domain.math.cs, domain.physical.sci, domain.life.sci, domain.health.sci, domain.soc.sci, domain.humanities, loc.davis, loc.sacramento, loc.other, role.undergrad, role.grad.postdoc, role.faculty, role.staff, role.other, pronoun.he, pronoun.she, pronoun.they, exp.none, exp.some, exp.extensive)
@@ -151,7 +154,7 @@ results
 # BASIC DATA VISUALIZATION
 
 ggplot(df, aes(x=workshop))+geom_bar()
-ggplot(df, aes(x=host))+geom_bar()
+ggplot(df, aes(x=hostuc))+geom_bar()
 ggplot(df, aes(x=location))+geom_bar()
 ggplot(df, aes(x=pronouns))+geom_bar()
 
