@@ -215,15 +215,30 @@ results
 
 # BASIC DATA VISUALIZATION
 
-ggplot(df, aes(x=workshop))+geom_bar()
-ggplot(df, aes(x=hostuc))+geom_bar()
+uc_colors = c("UC ANR" = "#ab312c",
+              "UC Berkeley" = "#003262",
+              "UC Davis" = "#00B2E3",
+              "UC Irvine" = "#7c109a",
+              "UCLA" = "#2774AE",
+              "UC Merced" = "#6ba43a",
+              "UC Riverside" = "#E4002B",
+              "UC San Diego" = "#C69214",
+              "UC San Francisco" = "#561038",
+              "UC Santa Barbara" = "#9CBEBE",
+              "UC Santa Cruz" = "#fdc700",
+              "UCOP" = "#BDE3F6",
+              "UC Davis Health" = "#79242F",
+              "UCD" = "#00B2E3")
+
 ggplot(df, aes(x=location))+geom_bar()
+ggplot(df, aes(x=hostuc))+geom_bar()
+ggplot(df, aes(y=workshop, fill = location))+geom_bar()+scale_fill_manual(values=uc_colors)
 
 ggplot(registrant_domain, 
        aes(y=reorder(rownames(registrant_domain),total), x=total))+
         geom_col()+
         geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
-        scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
+        scale_y_discrete(expand = expansion(mult = c(0.1, .1))) +
         scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
         labs(y="Registrant Domain")
 
