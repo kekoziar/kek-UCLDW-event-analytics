@@ -134,7 +134,7 @@ uniq.registrants <- length(unique(df$email))   # 1110
 #  some registrants listed more than one domain. 
 #  to capture all of the data we use two variables. 
 #  
-#  This is unduplicated/not unique, 
+#  This is duplicated/not unique, 
 #   so unique registrant that registered for more than one workshop is counted twice
 #
 #   registrant_domain$total indicates total number of registrant that lists domain
@@ -155,6 +155,16 @@ uniq.registrants <- length(unique(df$email))   # 1110
 
 
 # Registrant Roles
+  
+  # cleanup so commas are separators within the list elements 
+  role_toReplace <- c("Student, undergraduate", "Student, graduate", "\\|", " ,")
+  role_Replacement <- c("Student (undergraduate)", "Student (graduate)", ",", ",")
+  
+  for (i in 1:(length(role_toReplace))){
+    df$role <- str_replace_all(df$role, role_toReplace[i], role_Replacement[i])
+  }
+  
+#   role <- df$role #  
   df$role<- as.factor(df$role)
   #levels:   
   role.undergrad<-sum(df$role== "Student, undergraduate", na.rm=TRUE)
