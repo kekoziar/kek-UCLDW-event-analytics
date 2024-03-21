@@ -172,7 +172,8 @@ uniq.registrants <- length(unique(df$email))   # 1110
              "Student undergraduate",
              "UC Alumni",
              "Other", 
-             "unknown")
+             "unknown",
+             "Non-Controlled Vocabulary")
   
   # cleanup so commas are separators within the list elements 
   role_toReplace <- c("Student, undergraduate", "Student, graduate", "\\|", " , ", ", ")
@@ -192,6 +193,9 @@ uniq.registrants <- length(unique(df$email))   # 1110
     i <- i+1
   }
   
+  registrant_role$total[length(registrant_role$total)] <- length(df$role[grep(paste(roles, collapse="|"), df$role, invert=TRUE)])
+  roles_nonControlledVocab <- unique(df$role[grep(paste(roles, collapse="|"), df$role, invert=TRUE)])
+
   
 #   role <- df$role #  
   df$role<- as.factor(df$role)
@@ -214,7 +218,22 @@ results
 ggplot(df, aes(x=workshop))+geom_bar()
 ggplot(df, aes(x=hostuc))+geom_bar()
 ggplot(df, aes(x=location))+geom_bar()
-ggplot(df, aes(x=pronouns))+geom_bar()
+
+ggplot(registrant_domain, 
+       aes(y=reorder(rownames(registrant_domain),total), x=total))+
+        geom_col()+
+        geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
+        scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
+        scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
+        labs(y="Registrant Domain")
+
+ggplot(registrant_role, 
+       aes(y=reorder(rownames(registrant_role),total), x=total))+
+        geom_col()+
+        geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
+        scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
+        scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
+        labs(y="Registrant Role")
 
 ###############################################################
 
