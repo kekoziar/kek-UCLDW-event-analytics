@@ -74,6 +74,9 @@ df<-dplyr::rename(df, workshop=nameofworkshop,
                       past.attendee=didyouattendapreviousuclovedataweek, 
                       distribution=howdidyoufirsthearaboutthisworkshop)
 
+df[is.na(df)] <- "unknown"
+df[df == ""] <- "unknown"
+
 # create column for email domain (splitting at the @)
 df$email<-str_to_lower(df$email)          # removes capitalization in some email addresses
 df$email.entity<-gsub(".*@","",df$email)  # returns only after the @, proxy for entity (ie ucdavis, ucla)
@@ -81,6 +84,7 @@ df$email.org<-gsub(".*\\.","",df$email.entity)  # returns only after the . (need
 # email.entity is @* and email.org is .*
 df$email.org<-as.factor(df$email.org)  # returns edu, com, gov, etc.
 df$email.entity<-as.factor(df$email.entity) # returns ucdavis.edu, etc.
+
 
 ##########################################################
 
@@ -127,7 +131,8 @@ uniq.registrants <- length(unique(df$email))   # 1110
                "Life sciences",
                "Mathematical and computational sciences",
                "Physical sciences",
-               "Social sciences")
+               "Social sciences", 
+               "unknown")
 
 ############################
 # For domains 
@@ -142,10 +147,10 @@ uniq.registrants <- length(unique(df$email))   # 1110
 #
 ############################
   
-  i <- 1
   registrant_domain <- data.frame(total=vector("numeric", length=length(domains)), 
                                   exact=vector("numeric", length=length(domains)), 
                                   row.names = domains)
+  i <- 1
   for(domain in domains){
     registrant_domain$total[i] <- length(df$domain[df$domain %like% domain])
     registrant_domain$exact[i] <- sum(df$domain == domain, na.rm=TRUE)
@@ -156,13 +161,37 @@ uniq.registrants <- length(unique(df$email))   # 1110
 
 # Registrant Roles
   
+  roles <- c("Faculty",
+             "Librarian",
+             "Medical Resident",
+             "Physician / Clinician",
+             "Postdoc",
+             "Professional Researcher",
+             "Staff",
+             "Student graduate",
+             "Student undergraduate",
+             "UC Alumni",
+             "Other", 
+             "unknown")
+  
   # cleanup so commas are separators within the list elements 
-  role_toReplace <- c("Student, undergraduate", "Student, graduate", "\\|", " ,")
-  role_Replacement <- c("Student (undergraduate)", "Student (graduate)", ",", ",")
+  role_toReplace <- c("Student, undergraduate", "Student, graduate", "\\|", " , ", ", ")
+  role_Replacement <- c("Student undergraduate", "Student graduate", ",", ",", ",")
   
   for (i in 1:(length(role_toReplace))){
     df$role <- str_replace_all(df$role, role_toReplace[i], role_Replacement[i])
   }
+  
+  registrant_role <- data.frame(total=vector("numeric", length=length(roles)), 
+                                  exact=vector("numeric", length=length(roles)), 
+                                  row.names = roles)
+  i <- 1
+  for(role in roles){
+    registrant_role$total[i] <- length(df$role[df$role %like% role])
+    registrant_role$exact[i] <- sum(df$role == role, na.rm=TRUE)
+    i <- i+1
+  }
+  
   
 #   role <- df$role #  
   df$role<- as.factor(df$role)
