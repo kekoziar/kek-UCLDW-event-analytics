@@ -13,21 +13,17 @@
 ##########################################################
 
 # MANUAL PREPARATION
-
-# Added column "Host", with levels being the UC code
-# Moved UCSB entries for Data-DeID and Data Visualization workshops
-# under Pronouns column to new column "Requests", as they were in the incorrect column
-# Added NA for any row missing Email Address
-# Completed Current Institution based on email address suffix for Reproducibility for Everyone workshop; 
-# used NA for email addresses where suffix was not indicative 
-# Host for Reproducibility for Everyone listed as Multiple (UCB + UCD graduate student led)
+# on google sheet
+# -- filled in missing data using vlookup
+# -- standardized capitalization
+# -- fixed emails based on assessment email bounces
 ##########################################################
 
 # CAVEATS
 
 # Not all information captured across all workshops
-# No registration data from 4 "informal" activities hosted by UCD (R, Python and Julia User Group Meetup, WiDS Datathon)
-# Domain: some forms restricted to one entry, whereas others allowed multiple to be selected
+# for role and current institution, some registration surveys
+#     allowed multiple selections
 # Registration counts can often be assumed to be greater than actual attendance data
 ##########################################################
 
@@ -39,6 +35,7 @@ library(stringr)
 library(data.table)
 library(psych)
 library(tidyverse)
+library(forcats)
 ##########################################################
 
 # DIRECTORY
@@ -213,7 +210,7 @@ uniq.registrants <- length(unique(df$email))   # 1110
 
 # BASIC DATA VISUALIZATION 
 
-# do some new variables for color coding
+# some new variables for color coding - aren't they pretty?
 
 uc_colors <- c("UC ANR" = "#ab312c",
               "UC Berkeley" = "#003262",
@@ -287,7 +284,7 @@ ggplot(registrant_domain,
         geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
         scale_y_discrete(expand = expansion(mult = c(0.1, .1))) +
         scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
-        labs(y="Registrant Domain")
+        labs(y="Registrant Domain", x="Registration Count")
 
 ggplot(registrant_role, 
   aes(y=reorder(rownames(registrant_role),total), x=total, ))+
@@ -295,7 +292,7 @@ ggplot(registrant_role,
   geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
   scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
   scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
-  labs(y="Registrant Role")
+  labs(y="Registrant Role", x="Registration Count")
 
 ###############################################################
 ##########################################################
@@ -330,6 +327,11 @@ df.controlVocab$location[grep(paste(locations, collapse="|"), df.controlVocab$lo
 df.controlVocab$location[grep(",", df.controlVocab$location, invert=FALSE)] <- "nonControlVocab"
 
 ### plot registrant campus with count, color coded by registrant's role ###
+cbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
+               "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+               "#00008B", "#FFB6C1", "#A0E57E",
+               "#800080", "#5E8C49")
 ggplot(df.controlVocab, aes(y=location, fill = role))+
   geom_bar()+
+  scale_fill_manual(values=cbPalette) + 
   labs(y="Registrant Campus", x="Total Registration Count", fill="Registrant Role")
