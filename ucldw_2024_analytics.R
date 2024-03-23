@@ -17,14 +17,17 @@
 # -- filled in missing data using vlookup
 # -- standardized capitalization
 # -- fixed emails based on assessment email bounces
+# -- fixed workshop dates
 ##########################################################
 
 # CAVEATS
 
-# Not all information captured across all workshops
-# for role and current institution, some registration surveys
-#     allowed multiple selections
-# Registration counts can often be assumed to be greater than actual attendance data
+# -- Not all information captured across all workshops
+# -- for role and current institution, some registration surveys
+#        allowed multiple selections
+# -- To account for multiple values, in most summary statistics, 
+#        value was changed to nonControlVocab
+# -- Registration counts can often be assumed to be greater than actual attendance data
 ##########################################################
 
 # LIBRARIES
@@ -34,6 +37,7 @@ library(dplyr)
 library(tidyverse)
 library(data.table) #function %like%
 
+# artifacts of previous year's analytics. unneeded so far
 # library(stringr) 
 #library(psych)
 #library(readxl) # if reading in from xls
@@ -317,9 +321,9 @@ df.controlVocab$location[grep("Nonprofit|Industry", df.controlVocab$location, in
 df.controlVocab$location<- factor(df.controlVocab$location, 
                                   levels=c(sort(unique(df.controlVocab$location), decreasing=TRUE)))
 ### plot registrant campus with count, color coded by registrant's role ###
-cbPalette <- c("#000000", "#E69F00", "#BDE3F6", "#ab312c", 
-               "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
-               "#003262", "#6ba43a", "#800080", "#00b2e3", "#E4002B")
+#cbPalette <- c("#000000", "#E69F00", "#BDE3F6", "#ab312c", 
+#               "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+#               "#003262", "#6ba43a", "#800080", "#00b2e3", "#E4002B")
 
 ggplot(df.controlVocab, aes(y=location, fill = role))+
   geom_bar()+
@@ -342,17 +346,18 @@ ggplot(df.cvDedup, aes(y=location, fill = role))+
 
 
 #########################################################
+# output some CSVs for tables
 
-ggplot(reg.by.workshop, aes(x = 1, y = workshop, label = n)) +
-  geom_text(size = 5) +  # You can customize the appearance here
-  theme_void()  # Removes background and axis
+cols2remove <- c("fullname","email","department","workshopdate")
 
+for(i in 1:(length(df[, !names(df) %in% cols2remove])-1)){
+  for(j in (i+1):length(df[, !names(df) %in% cols2remove])){
+    print(paste0("i: ", i, " j: ",j))
+    print(paste0("i: ", names(df[, !names(df) %in% cols2remove])[i], " j: ",names(df[, !names(df) %in% c("fullname","email","department")])[j]))
+    write.csv(df %>% count(df[, !names(df) %in% cols2remove][i], df[, !names(df) %in% cols2remove][j]), 
+              paste0("output/df_filter_",names(df[, !names(df) %in% cols2remove])[i],"-",names(df[, !names(df) %in% cols2remove])[j], ".csv"), 
+              row.names = FALSE)
+    
+  }
+}
 
-df_long <- reg.by.workshop %>%
-  tidyr::pivot_longer(cols = starts_with("Value"), names_to = "Variable", values_to = "Value") %>%
-  mutate(Label = paste(workshop, role, sep = "-"))
-
-# Create ggplot table
-ggplot(df_long, aes(x = Variable, y = Label, label = Value)) +
-  geom_text(size = 5) +  # You can customize the appearance here
-  theme_minimal()  # You can use any theme of your choice
