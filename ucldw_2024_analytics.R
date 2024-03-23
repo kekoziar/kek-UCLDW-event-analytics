@@ -29,13 +29,14 @@
 
 # LIBRARIES
 
-library(readxl) # if reading in from xls
+
 library(dplyr)
-library(stringr)
-library(data.table)
-library(psych)
 library(tidyverse)
-library(forcats)
+library(data.table) #function %like%
+
+# library(stringr) 
+#library(psych)
+#library(readxl) # if reading in from xls
 ##########################################################
 
 # DIRECTORY
@@ -102,7 +103,7 @@ reg.by.workshop.role<-df %>% count(workshop, role)
 # CREATE SUMMARY VARIABLES
   
 # Domain
-  df$domain<- as.factor(df$domain) #don't need this
+#  df$domain<- as.factor(df$domain) #don't need this
   domains <- c("Health sciences",
                "Humanities",
                "Life sciences",
@@ -322,7 +323,7 @@ cbPalette <- c("#000000", "#E69F00", "#BDE3F6", "#ab312c",
 
 ggplot(df.controlVocab, aes(y=location, fill = role))+
   geom_bar()+
-  scale_fill_manual(values=cbPalette) + 
+  scale_fill_manual(values=unname(uc_colors)) + 
 #  geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
 #  scale_y_discrete(expand = expansion(mult = c(0.1, .1))) +
 #  scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
@@ -335,5 +336,23 @@ df.cvDedup <- data.frame(df.controlVocab[!duplicated(df.controlVocab$email),])
 
 ggplot(df.cvDedup, aes(y=location, fill = role))+
   geom_bar()+
-  scale_fill_manual(values=cbPalette) + 
+  scale_fill_manual(values=unname(uc_colors)) + 
   labs(y="Registrant Campus", x="Deduplicated Registration Count", fill="Registrant Role")
+
+
+
+#########################################################
+
+ggplot(reg.by.workshop, aes(x = 1, y = workshop, label = n)) +
+  geom_text(size = 5) +  # You can customize the appearance here
+  theme_void()  # Removes background and axis
+
+
+df_long <- reg.by.workshop %>%
+  tidyr::pivot_longer(cols = starts_with("Value"), names_to = "Variable", values_to = "Value") %>%
+  mutate(Label = paste(workshop, role, sep = "-"))
+
+# Create ggplot table
+ggplot(df_long, aes(x = Variable, y = Label, label = Value)) +
+  geom_text(size = 5) +  # You can customize the appearance here
+  theme_minimal()  # You can use any theme of your choice
