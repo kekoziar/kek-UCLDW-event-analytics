@@ -86,31 +86,17 @@ df$email.entity<-as.factor(df$email.entity) # returns ucdavis.edu, etc.
 ##########################################################
 # BASIC METRICS - Totals
 
-# Total Number Workshops
-total.workshops<-length(unique(df$workshop))
 
-# Total Registrations
+total.sessions<-length(unique(df$workshop))
 total.registrants<-length(df$email)
-total.registrants  # 2098
+uniq.registrants <- length(unique(df$email))
+uniq.departs <- length(unique(df$department))
+total.location <- length(unique(df$location))
 
-# Unique Registrants
-uniq.registrants <- length(unique(df$email))   # 1110
+reg.by.workshop<-df %>% count(hostuc, workshop)
+reg.by.workshop.current<-df %>% count(workshop, location)
+reg.by.workshop.role<-df %>% count(workshop, role)
 
-# Total Attended
-#total.attended<-sum(df$attended == "yes", df$attended == "Yes", df$attended == "YES", df$attended == "attended", df$attended == "Attended", df$attended == "x", df$attended =="X", df$attended == "walk-on",df$attended == "walk-in", na.rm=TRUE)
-
-# Unique "Departments"
-  df$department<- as.factor(df$department)
-  uniq.departments<-length(unique(df$department))
-
-# Unique Current Institutions
-  uniq.location <- length(unique(df$location))
-
-# Registrants per workshop by host
-  reg.by.workshop<-df %>% count(hostuc, workshop)
-
-# Registrants per workshop by current institution
-  reg.by.workshop.current<-df %>% count(workshop, location)
 ##########################################################
 ##########################################################
 # CREATE SUMMARY VARIABLES
@@ -325,13 +311,29 @@ locations <- c("UC ANR",
 
 df.controlVocab$location[grep(paste(locations, collapse="|"), df.controlVocab$location, invert=TRUE)] <- "nonControlVocab"
 df.controlVocab$location[grep(",", df.controlVocab$location, invert=FALSE)] <- "nonControlVocab"
+df.controlVocab$location[grep("Nonprofit|Industry", df.controlVocab$location, invert=FALSE)] <- "Other"
 
+df.controlVocab$location<- factor(df.controlVocab$location, 
+                                  levels=c(sort(unique(df.controlVocab$location), decreasing=TRUE)))
 ### plot registrant campus with count, color coded by registrant's role ###
-cbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
+cbPalette <- c("#000000", "#E69F00", "#BDE3F6", "#ab312c", 
                "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
-               "#00008B", "#FFB6C1", "#A0E57E",
-               "#800080", "#5E8C49")
+               "#003262", "#6ba43a", "#800080", "#00b2e3", "#E4002B")
+
 ggplot(df.controlVocab, aes(y=location, fill = role))+
   geom_bar()+
   scale_fill_manual(values=cbPalette) + 
+#  geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
+#  scale_y_discrete(expand = expansion(mult = c(0.1, .1))) +
+#  scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
   labs(y="Registrant Campus", x="Total Registration Count", fill="Registrant Role")
+
+
+
+
+df.cvDedup <- data.frame(df.controlVocab[!duplicated(df.controlVocab$email),])
+
+ggplot(df.cvDedup, aes(y=location, fill = role))+
+  geom_bar()+
+  scale_fill_manual(values=cbPalette) + 
+  labs(y="Registrant Campus", x="Deduplicated Registration Count", fill="Registrant Role")
