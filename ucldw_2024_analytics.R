@@ -85,18 +85,12 @@ df$email.org<-gsub(".*\\.","",df$email.entity)  # returns only after the . (need
 df$email.org<-as.factor(df$email.org)  # returns edu, com, gov, etc.
 df$email.entity<-as.factor(df$email.entity) # returns ucdavis.edu, etc.
 
-
 ##########################################################
-
-# BASIC METRICS
-
-df.table<-as.data.frame(df) #why?
+##########################################################
+# BASIC METRICS - Totals
 
 # Total Number Workshops
 total.workshops<-length(unique(df$workshop))
-total.events<-total.workshops+4  # what are these? what's the difference between events and workshops?
-total.workshops # 21
-total.events   # 25
 
 # Total Registrations
 total.registrants<-length(df$email)
@@ -120,7 +114,7 @@ uniq.registrants <- length(unique(df$email))   # 1110
 
 # Registrants per workshop by current institution
   reg.by.workshop.current<-df %>% count(workshop, location)
-
+##########################################################
 ##########################################################
 # CREATE SUMMARY VARIABLES
   
@@ -198,24 +192,30 @@ uniq.registrants <- length(unique(df$email))   # 1110
 
   
 #   role <- df$role #  
-  df$role<- as.factor(df$role)
+#  df$role<- as.factor(df$role)
   #levels:   
-  role.undergrad<-sum(df$role== "Student, undergraduate", na.rm=TRUE)
-  role.grad.postdoc<-sum(df$role== "Student, graduate" | df$role== "Postdoc" , na.rm=TRUE)
-  role.faculty<-sum(df$role== "Faculty", na.rm=TRUE)
-  role.staff<-sum(df$role== "Staff" | df$role=="Professional Researcher", na.rm=TRUE)
-  role.other<-sum(df$role=="Alumni" | df$role=="Other" | df$role=="Medical Resident", na.rm=TRUE)
+#  role.undergrad<-sum(df$role== "Student, undergraduate", na.rm=TRUE)
+#  role.grad.postdoc<-sum(df$role== "Student, graduate" | df$role== "Postdoc" , na.rm=TRUE)
+#  role.faculty<-sum(df$role== "Faculty", na.rm=TRUE)
+#  role.staff<-sum(df$role== "Staff" | df$role=="Professional Researcher", na.rm=TRUE)
+#  role.other<-sum(df$role=="Alumni" | df$role=="Other" | df$role=="Medical Resident", na.rm=TRUE)
 
 
 # Overall Summary
-results<-data.frame(total.registrants, uniq.departments, email.academia, email.govt, email.other, domain.math.cs, domain.physical.sci, domain.life.sci, domain.health.sci, domain.soc.sci, domain.humanities, loc.davis, loc.sacramento, loc.other, role.undergrad, role.grad.postdoc, role.faculty, role.staff, role.other, pronoun.he, pronoun.she, pronoun.they, exp.none, exp.some, exp.extensive)
-results
+#results<-data.frame(total.registrants, uniq.departments, email.academia, email.govt, email.other, domain.math.cs, domain.physical.sci, domain.life.sci, domain.health.sci, domain.soc.sci, domain.humanities, loc.davis, loc.sacramento, loc.other, role.undergrad, role.grad.postdoc, role.faculty, role.staff, role.other, pronoun.he, pronoun.she, pronoun.they, exp.none, exp.some, exp.extensive)
+#results
+
+
+
+
 
 ###############################################################
 
-# BASIC DATA VISUALIZATION
+# BASIC DATA VISUALIZATION 
 
-uc_colors = c("UC ANR" = "#ab312c",
+# do some new variables for color coding
+
+uc_colors <- c("UC ANR" = "#ab312c",
               "UC Berkeley" = "#003262",
               "UC Davis" = "#00B2E3",
               "UC Irvine" = "#7c109a",
@@ -230,10 +230,57 @@ uc_colors = c("UC ANR" = "#ab312c",
               "UC Davis Health" = "#79242F",
               "UCD" = "#00B2E3")
 
-ggplot(df, aes(x=location))+geom_bar()
-ggplot(df, aes(x=hostuc))+geom_bar()
-ggplot(df, aes(y=workshop, fill = location))+geom_bar()+scale_fill_manual(values=uc_colors)
+##########################################################
+### all because ggplot + 
+### sorting + 
+### color coding the labels +
+### adding multiple colors to the column
+##### doesn't seem to want to work together.
+  #
+  # slacker.
+workshop_summary<-unique(df[,c("workshop", "hostuc")])
+workshop_summary$color <- uc_colors[workshop_summary$hostuc]
+workshop_summary <- workshop_summary[order(as.character(workshop_summary$workshop), decreasing=TRUE),]
+workshop_colors<-setNames(workshop_summary$color, workshop_summary$workshop)
 
+
+
+# ggplot(df, aes(x=location))+geom_bar()
+# ggplot(df, aes(x=hostuc))+geom_bar()
+
+
+##########################################################
+# let's make some plots
+##########################################################
+
+
+##########################################################
+# workshop, sorted by largest registration, with totals included
+df %>%
+  count(workshop) %>%
+  arrange(desc(n)) %>%
+  mutate(workshop = fct_reorder(workshop, n))  %>%
+  ggplot(aes(x=n, y=workshop))+
+  geom_bar(stat="identity")+
+  geom_text(aes(label=n), vjust = 0.5, hjust = -.24)+
+  scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
+  scale_x_continuous(expand = expansion(mult = c(0.001, .1))) +
+  labs(y="Workshop", x="Registration Count")
+
+##########################################################
+# need to sort df for the label colors to match
+df$workshop<- factor(df$workshop, levels=c(sort(unique(df$workshop), decreasing=TRUE)))
+
+# workshop totals with color coded registrant location & workshop Host
+ggplot(df, aes(y=workshop, fill = location))+
+  geom_bar()+
+  scale_fill_manual(values=uc_colors) + 
+  labs(y="Workshop", x="Registration Count", fill="Registrant Location") +
+  theme(axis.text.y = element_text(colour=unname(workshop_colors), face="bold"))
+  # colors matching, but wish this can sort in order
+
+##########################################################
+### total registration by domain and role ###
 ggplot(registrant_domain, 
        aes(y=reorder(rownames(registrant_domain),total), x=total))+
         geom_col()+
@@ -243,12 +290,46 @@ ggplot(registrant_domain,
         labs(y="Registrant Domain")
 
 ggplot(registrant_role, 
-       aes(y=reorder(rownames(registrant_role),total), x=total))+
-        geom_col()+
-        geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
-        scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
-        scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
-        labs(y="Registrant Role")
+  aes(y=reorder(rownames(registrant_role),total), x=total, ))+
+  geom_col()+
+  geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
+  scale_y_discrete(expand = expansion(mult = c(0.05, .05))) +
+  scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
+  labs(y="Registrant Role")
 
 ###############################################################
+##########################################################
+# cleaning new df for controlled vocabulary of campus & role
+##########################################################
 
+df.controlVocab <- data.frame(df)
+
+df.controlVocab$role[grep(paste(roles, collapse="|"), df.controlVocab$role, invert=TRUE)] <- "nonControlVocab"
+df.controlVocab$role[grep(",", df.controlVocab$role, invert=FALSE)] <- "nonControlVocab"
+
+locations <- c("UC ANR",
+               "UC Berkeley",
+               "UC Davis",
+               "UC Irvine",
+               "UCLA",
+               "UC Merced",
+               "UC Riverside",
+               "UC San Diego",
+               "UC San Francisco",
+               "UC Santa Barbara",
+               "UC Santa Cruz",
+               "UCOP",
+               "California State University (CSU)",
+               "Other University",
+               "Government",
+               "Industry",
+               "Nonprofit",
+               "Other")
+
+df.controlVocab$location[grep(paste(locations, collapse="|"), df.controlVocab$location, invert=TRUE)] <- "nonControlVocab"
+df.controlVocab$location[grep(",", df.controlVocab$location, invert=FALSE)] <- "nonControlVocab"
+
+### plot registrant campus with count, color coded by registrant's role ###
+ggplot(df.controlVocab, aes(y=location, fill = role))+
+  geom_bar()+
+  labs(y="Registrant Campus", x="Total Registration Count", fill="Registrant Role")
