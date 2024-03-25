@@ -28,6 +28,8 @@
 # -- To account for multiple values, in most summary statistics, 
 #        value was changed to nonControlVocab
 # -- Registration counts can often be assumed to be greater than actual attendance data
+# -- deduplicating is not exact, ~44 unique registrants used multiple email addresses
+#        some are different domains/orgs. 
 ##########################################################
 
 # LIBRARIES
@@ -79,7 +81,17 @@ df<-dplyr::rename(df, workshop=nameofworkshop,
 df[is.na(df)] <- "unknown"
 df[df == ""] <- "unknown"
 
-# create column for email domain (splitting at the @)
+# a little bit of cleanup
+df$past.attendee<-str_to_title(df$past.attendee) 
+
+
+#will query unique departments later
+# but there is no controlled vocab, so this will at least reduce it by a little
+df$department<-str_to_lower(df$department) 
+df$department<-gsub("&"," and ",df$department)
+df$department<-gsub("  "," ",df$department)
+
+# to query email domains (entity) and top-level domains (org)
 df$email<-str_to_lower(df$email)          # removes capitalization in some email addresses
 df$email.entity<-gsub(".*@","",df$email)  # returns only after the @, proxy for entity (ie ucdavis, ucla)
 df$email.org<-gsub(".*\\.","",df$email.entity)  # returns only after the . (need double escape, \\, because . is special)
@@ -89,15 +101,16 @@ df$email.entity<-as.factor(df$email.entity) # returns ucdavis.edu, etc.
 
 ##########################################################
 ##########################################################
-# BASIC METRICS - Totals
+# METRICS - Totals
 
-
+# Basic Statistics
 total.sessions<-length(unique(df$workshop))
 total.registrants<-length(df$email)
 uniq.registrants <- length(unique(df$email))
-uniq.departs <- length(unique(df$department))
 total.location <- length(unique(df$location))
+uniq.departs <- length(unique(df$department))
 
+# more complex statistics (two levels)
 reg.by.workshop<-df %>% count(hostuc, workshop)
 reg.by.workshop.current<-df %>% count(workshop, location)
 reg.by.workshop.role<-df %>% count(workshop, role)
