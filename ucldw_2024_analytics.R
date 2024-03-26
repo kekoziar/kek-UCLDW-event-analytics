@@ -58,9 +58,9 @@ path_out = "~/Documents/Teaching/UCDLW/UCLDW2023/output"
 my.data<-read.csv("UCLDW_2024_Registrations.csv")
 df<-my.data
 ##########################################################
-
+##########################################################
 # CLEANING
-
+##########################################################
 # remove punctuation in column names
 colnames(df)<-str_trim(colnames(df))
 colnames(df)<-str_replace_all(colnames(df), "[:punct:]", "") # removes the ?'s
@@ -85,7 +85,6 @@ df[df == ""] <- "unknown"
 # a little bit of cleanup
 df$past.attendee<-str_to_title(df$past.attendee) 
 
-
 #will query unique departments later
 # but there is no controlled vocab, so this will at least reduce it by a little
 df$department<-str_to_lower(df$department) 
@@ -101,20 +100,51 @@ df$email.org<-as.factor(df$email.org)  # returns edu, com, gov, etc.
 df$email.entity<-as.factor(df$email.entity) # returns ucdavis.edu, etc.
 
 ##########################################################
+## useful variables for the future
+##########################################################
+
+locations <- c("UC ANR",   #useful for more than just sorting
+               "UC Berkeley",
+               "UC Davis",
+               "UC Irvine",
+               "UCLA",
+               "UC Merced",
+               "UC Riverside",
+               "UC San Diego",
+               "UC San Francisco",
+               "UC Santa Barbara",
+               "UC Santa Cruz",
+               "UCOP",
+               "California State University (CSU)",
+               "Other University",
+               "Government",
+               "Industry",
+               "Nonprofit",
+               "Other")
+
+# to create a column which sorts locations, prioritizing UCs
+names_df <- names(df) # because merge resorts columns... 
+df_loc <- data.frame(loc = locations,
+                     loc_sort = c(1:length(locations)))
+df <- merge(df, df_loc, by.x = "location", by.y = "loc", all.x = TRUE)
+df <- df[, c(names_df,"loc_sort")]
+df$loc_sort[is.na(df$loc_sort)] <- (length(locations)+1) 
+rm(df_loc) #just some cleanup...
+##########################################################
 ##########################################################
 # METRICS - Totals
-
+# don't need this anymore. export to excel below
 # Basic Statistics
-total.sessions<-length(unique(df$workshop))
-total.registrants<-length(df$email)
-uniq.registrants <- length(unique(df$email))
-total.location <- length(unique(df$location))
-uniq.departs <- length(unique(df$department))
+#total.sessions<-length(unique(df$workshop))
+#total.registrants<-length(df$email)
+#uniq.registrants <- length(unique(df$email))
+#total.location <- length(unique(df$location))
+#uniq.departs <- length(unique(df$department))
 
 # more complex statistics (two levels)
-reg.by.workshop<-df %>% count(hostuc, workshop)
-reg.by.workshop.current<-df %>% count(workshop, location)
-reg.by.workshop.role<-df %>% count(workshop, role)
+#reg.by.workshop<-df %>% count(hostuc, workshop)
+#reg.by.workshop.current<-df %>% count(workshop, location)
+#reg.by.workshop.role<-df %>% count(workshop, role)
 
 ##########################################################
 ##########################################################
@@ -315,36 +345,14 @@ df.controlVocab <- data.frame(df)
 df.controlVocab$role[grep(paste(roles, collapse="|"), df.controlVocab$role, invert=TRUE)] <- "nonControlVocab"
 df.controlVocab$role[grep(",", df.controlVocab$role, invert=FALSE)] <- "nonControlVocab"
 
-locations <- c("UC ANR",
-               "UC Berkeley",
-               "UC Davis",
-               "UC Irvine",
-               "UCLA",
-               "UC Merced",
-               "UC Riverside",
-               "UC San Diego",
-               "UC San Francisco",
-               "UC Santa Barbara",
-               "UC Santa Cruz",
-               "UCOP",
-               "California State University (CSU)",
-               "Other University",
-               "Government",
-               "Industry",
-               "Nonprofit",
-               "Other")
-
 df.controlVocab$location[grep(paste(locations, collapse="|"), df.controlVocab$location, invert=TRUE)] <- "nonControlVocab"
 df.controlVocab$location[grep(",", df.controlVocab$location, invert=FALSE)] <- "nonControlVocab"
 df.controlVocab$location[grep("Nonprofit|Industry", df.controlVocab$location, invert=FALSE)] <- "Other"
 
 df.controlVocab$location<- factor(df.controlVocab$location, 
                                   levels=c(sort(unique(df.controlVocab$location), decreasing=TRUE)))
-### plot registrant campus with count, color coded by registrant's role ###
-#cbPalette <- c("#000000", "#E69F00", "#BDE3F6", "#ab312c", 
-#               "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
-#               "#003262", "#6ba43a", "#800080", "#00b2e3", "#E4002B")
 
+### plot registrant campus with count, color coded by registrant's role ###
 ggplot(df.controlVocab, aes(y=location, fill = role))+
   geom_bar()+
   scale_fill_manual(values=unname(uc_colors)) + 
@@ -388,16 +396,80 @@ tmp_label <-"Basic Workshop Info"
 addWorksheet(wb, tmp_label)
 tmp_df_wide <- df %>% count(df$workshopdate, df$hostuc, df$workshop)
 colnames(tmp_df_wide) <- c("Date", "Host UC", "Workshop Title", "Total")
-writeDataTable(wb, 
+writeData(wb, 
                tmp_label, 
                x = tmp_df_wide)
 
 ############
 tmp_label <-"Available Variables"
 addWorksheet(wb, tmp_label)
-writeDataTable(wb, 
+writeData(wb, 
                tmp_label, 
                x = as.data.frame(names(df)))
+
+
+############
+# Basic Statistics
+############
+tmp_label <-"Basic Statistics"
+addWorksheet(wb, tmp_label)
+
+startRow <- 1
+startCol <- 1
+basic_stats <- data.frame(Statistic = c("Total sessions","Total Registrations", 
+                                        "Unique Registrants (by email)", "Unique Current Institution",
+                                        "Unique Departments (self-reported)"),
+                          Number = c(length(unique(df$workshop)),length(df$email),
+                                     length(unique(df$email)), length(unique(df$location)), 
+                                     length(unique(df$department))))
+
+writeData(wb, tmp_label, startRow = startRow, x = basic_stats)
+
+startRow <- startRow + (length(basic_stats[,1])+2)
+writeData(wb, tmp_label, startRow = startRow, x = "Current Institution")
+
+startRow <- startRow + 1
+
+basic_stats <- df %>% group_by(loc_sort) %>% count(location)
+colnames(basic_stats) <- c("sort", "Institution", "Duplicated Total")
+writeData(wb, tmp_label, startRow = startRow, 
+          x = basic_stats
+          )
+startCol <- startCol+ (length(basic_stats[1,])+1)
+
+
+df.cvDedup <- data.frame(df.controlVocab[!duplicated(df.controlVocab$email),])
+
+basic_stats <- df[!duplicated(df$email),] %>% group_by(loc_sort) %>% count(location)
+colnames(basic_stats) <- c("sort", "Institution", "Deduplicated Total")
+writeData(wb, tmp_label, startRow = startRow, startCol = startCol,
+          x = basic_stats
+)
+
+
+############
+# summary tables
+############
+tmp_label <-"Registrants"
+addWorksheet(wb, tmp_label)
+writeData(wb, tmp_label, x = "Deduplicated Registrants")
+
+startRow <- 2;
+tmp_df_wide <- df.cvDedup %>% count(df.cvDedup$location, df.cvDedup$role)
+colnames(tmp_df_wide) <- c("Registrant Campus", "Registrant Role", "Total")
+tmp_df_write <- spread(tmp_df_wide, key = "Registrant Role", value = Total, fill = 0)
+tmp_df_write <- tmp_df_write %>% map_df(rev)
+writeData(wb, tmp_label, startRow = startRow, x = tmp_df_write)
+
+startRow <- startRow + (length(tmp_df_write$`Registrant Campus`)+3)
+writeData(wb, tmp_label, startRow = startRow, x ="Duplicated Registrants")
+
+startRow <- startRow+1;
+tmp_df_wide <- df.controlVocab %>% count(df.controlVocab$location, df.controlVocab$role)
+colnames(tmp_df_wide) <- c("Registrant Campus", "Registrant Role", "Total")
+tmp_df_write <- spread(tmp_df_wide, key = "Registrant Role", value = Total, fill = 0)
+tmp_df_write <- tmp_df_write %>% map_df(rev)
+writeData(wb, tmp_label, startRow = startRow, x = tmp_df_write)
 
 ############
 tmp_label <-"Workshop by Domain, cVocab"
@@ -431,49 +503,49 @@ writeData(wb,
 ############################################################
 # filter by location
 ###############################################################
-# need to loop
-tmp_label <-"Berkeley"
-addWorksheet(wb, tmp_label)
-tmpdf_subset <- subset(df, location %in% c("UC Berkeley"))
-
-### workshop by role
-tmpdf_long <- tmpdf_subset %>% count(tmpdf_subset$workshop, tmpdf_subset$role)
-colnames(tmpdf_long) <- c("Workshop", "Role", "Total")
-
-tmp_df_write <- spread(tmpdf_long, 
-                       key = Role, 
-                       value = Total, 
-                       fill = 0
-)
-
-writeData(wb, 
-          tmp_label, 
-          x = tmp_df_write)
-
-startRow <- (length(tmp_df_write[,1])+3)
-
-### workshop by domain
-tmpdf_long <- tmpdf_subset %>% count(tmpdf_subset$workshop, tmpdf_subset$domain)
-colnames(tmpdf_long) <- c("Workshop", "Domain", "Total")
-tmp_df_write <- spread(tmpdf_long, 
-                       key = Domain, 
-                       value = Total, 
-                       fill = 0
-)
-
-writeData(wb, 
-          tmp_label, 
-          startRow = startRow,
-          x = tmp_df_write)
-
-
+for(uc in locations[1:11]){
+  tmp_label <-uc
+  addWorksheet(wb, tmp_label)
+  
+  startRow <- 1;
+  writeData(wb, tmp_label, startRow = startRow, x ="Workshop Registrants by Role")
+  
+  startRow <- startRow + 1;
+  tmpdf_subset <- subset(df, location %in% uc)
+  
+  ### workshop by role
+  tmpdf_long <- tmpdf_subset %>% count(tmpdf_subset$workshop, tmpdf_subset$role)
+  colnames(tmpdf_long) <- c("Workshop", "Role", "Total")
+  
+  tmp_df_write <- spread(tmpdf_long, 
+                         key = Role, 
+                         value = Total, 
+                         fill = 0
+                         )
+  writeData(wb, tmp_label, startRow = startRow, x = tmp_df_write)
+  
+  startRow <- startRow + (length(tmp_df_write[,1])+3)
+  writeData(wb, tmp_label, startRow = startRow, x ="Workshop Registrants by Domain")
+  
+  startRow <- startRow+1;
+  
+    
+  ### workshop by domain
+  tmpdf_long <- tmpdf_subset %>% count(tmpdf_subset$workshop, tmpdf_subset$domain)
+  colnames(tmpdf_long) <- c("Workshop", "Domain", "Total")
+  tmp_df_write <- spread(tmpdf_long, 
+                         key = Domain, 
+                         value = Total, 
+                         fill = 0
+  )
+  
+  writeData(wb, tmp_label, startRow = startRow, x = tmp_df_write)
+}
 
 ############################################################
 # save excel workbook
 ###############################################################
 
 if (FALSE) {
-  saveWorkbook(wb, file = "ucldw24-statistics20240326.xlsx", overwrite = TRUE)
+  saveWorkbook(wb, file = "ucldw24-statistics-20240326.xlsx", overwrite = TRUE)
 }
-
-
