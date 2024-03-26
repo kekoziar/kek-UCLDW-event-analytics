@@ -425,6 +425,49 @@ writeData(wb,
           tmp_label, 
           x = tmp_df_write)
 
+
+
+
+############################################################
+# filter by location
+###############################################################
+# need to loop
+tmp_label <-"Berkeley"
+addWorksheet(wb, tmp_label)
+tmpdf_subset <- subset(df, location %in% c("UC Berkeley"))
+
+### workshop by role
+tmpdf_long <- tmpdf_subset %>% count(tmpdf_subset$workshop, tmpdf_subset$role)
+colnames(tmpdf_long) <- c("Workshop", "Role", "Total")
+
+tmp_df_write <- spread(tmpdf_long, 
+                       key = Role, 
+                       value = Total, 
+                       fill = 0
+)
+
+writeData(wb, 
+          tmp_label, 
+          x = tmp_df_write)
+
+startRow <- (length(tmp_df_write[,1])+3)
+
+### workshop by domain
+tmpdf_long <- tmpdf_subset %>% count(tmpdf_subset$workshop, tmpdf_subset$domain)
+colnames(tmpdf_long) <- c("Workshop", "Domain", "Total")
+tmp_df_write <- spread(tmpdf_long, 
+                       key = Domain, 
+                       value = Total, 
+                       fill = 0
+)
+
+writeData(wb, 
+          tmp_label, 
+          startRow = startRow,
+          x = tmp_df_write)
+
+
+
 ############################################################
 # save excel workbook
 ###############################################################
