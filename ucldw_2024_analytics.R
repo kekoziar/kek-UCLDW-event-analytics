@@ -38,6 +38,7 @@
 library(dplyr)
 library(tidyverse)
 library(data.table) #function %like%
+library("openxlsx") #output to excel file
 
 # artifacts of previous year's analytics. unneeded so far
 # library(stringr) 
@@ -141,8 +142,11 @@ reg.by.workshop.role<-df %>% count(workshop, role)
 #   registrant_domain$exact indicates total number of registrant that only lists domain
 #
 ############################
-  
-  registrant_domain <- data.frame(total=vector("numeric", length=length(domains)), 
+
+## clean up some comma/space issues for multiple domains
+df$domain <- str_replace_all(df$domain, ", ", ",")  
+
+registrant_domain <- data.frame(total=vector("numeric", length=length(domains)), 
                                   exact=vector("numeric", length=length(domains)), 
                                   row.names = domains)
   i <- 1
@@ -191,6 +195,9 @@ reg.by.workshop.role<-df %>% count(workshop, role)
   registrant_role$total[length(registrant_role$total)] <- length(df$role[grep(paste(roles, collapse="|"), df$role, invert=TRUE)])
   roles_nonControlledVocab <- unique(df$role[grep(paste(roles, collapse="|"), df$role, invert=TRUE)])
 
+  ## check if roles & domains in df are standardized
+  unique(strsplit(paste(as.list(df$role), collapse = ','), ",")[[1]])
+  unique(strsplit(paste(as.list(df$domain), collapse = ','), ",")[[1]])
   
 #   role <- df$role #  
 #  df$role<- as.factor(df$role)
@@ -359,18 +366,71 @@ ggplot(df.cvDedup, aes(y=location, fill = role))+
 
 
 #########################################################
-# output some CSVs for tables
+# output to some tables 
 
-cols2remove <- c("fullname","email","department","workshopdate")
+############
+# writing to xlsx (easier to see in tabs)
 
-for(i in 1:(length(df[, !names(df) %in% cols2remove])-1)){
-  for(j in (i+1):length(df[, !names(df) %in% cols2remove])){
-    print(paste0("i: ", i, " j: ",j))
-    print(paste0("i: ", names(df[, !names(df) %in% cols2remove])[i], " j: ",names(df[, !names(df) %in% c("fullname","email","department")])[j]))
-    write.csv(df %>% count(df[, !names(df) %in% cols2remove][i], df[, !names(df) %in% cols2remove][j]), 
-              paste0("output/df_filter_",names(df[, !names(df) %in% cols2remove])[i],"-",names(df[, !names(df) %in% cols2remove])[j], ".csv"), 
-              row.names = FALSE)
-    
-  }
+df_labels <- names(df)
+cols2remove <- c("fullname","email","department","email.entity")
+df_labels <- df_labels[!df_labels %in% cols2remove]
+
+## check unique values
+for(i in 1:length(df_labels)){
+  print(unique(df[,df_labels[i]]))
 }
+
+############
+wb <- createWorkbook("ucldw24")
+
+############
+tmp_label <-"Basic Workshop Info"
+addWorksheet(wb, tmp_label)
+tmp_df_wide <- df %>% count(df$workshopdate, df$hostuc, df$workshop)
+colnames(tmp_df_wide) <- c("Date", "Host UC", "Workshop Title", "Total")
+writeDataTable(wb, 
+               tmp_label, 
+               x = tmp_df_wide)
+
+############
+tmp_label <-"Available Variables"
+addWorksheet(wb, tmp_label)
+writeDataTable(wb, 
+               tmp_label, 
+               x = as.data.frame(names(df)))
+
+############
+tmp_label <-"Workshop by Domain, cVocab"
+addWorksheet(wb, tmp_label)
+tmp_df_wide <- df %>% count(df$workshop, df$domain)
+colnames(tmp_df_wide) <- c("Workshop Title", "Registrant Domain", "Total")
+tmp_df_write <- spread(subset(tmp_df_wide, `Registrant Domain` %in% domains), 
+                       key = "Registrant Domain", 
+                       value = Total, 
+                       fill = 0
+)
+writeData(wb, 
+          tmp_label, 
+          x = tmp_df_write)
+
+############
+tmp_label <-"Workshop by Domain, other"
+addWorksheet(wb, tmp_label)
+tmp_df_write <- spread(subset(tmp_df_wide, !(`Registrant Domain` %in% domains)), 
+                       key = "Registrant Domain", 
+                       value = Total, 
+                       fill = 0
+)
+writeData(wb, 
+          tmp_label, 
+          x = tmp_df_write)
+
+############################################################
+# save excel workbook
+###############################################################
+
+if (FALSE) {
+  saveWorkbook(wb, file = "ucldw24-statistics20240326.xlsx", overwrite = TRUE)
+}
+
 
