@@ -317,6 +317,7 @@ ggplot(df, aes(y=workshop, fill = location))+
   theme(axis.text.y = element_text(colour=unname(workshop_colors), face="bold"))
   # colors matching, but wish this can sort in order
 
+
 ##########################################################
 ### total registration by domain and role ###
 ggplot(registrant_domain, 
@@ -352,7 +353,12 @@ df.controlVocab$location[grep("Nonprofit|Industry", df.controlVocab$location, in
 df.controlVocab$location<- factor(df.controlVocab$location, 
                                   levels=c(sort(unique(df.controlVocab$location), decreasing=TRUE)))
 
-### plot registrant campus with count, color coded by registrant's role ###
+df.controlVocab$domain[grep(paste(domains, collapse="|"), df.controlVocab$domain, invert=TRUE)] <- "nonControlVocab"
+df.controlVocab$domain[grep(",", df.controlVocab$domain, invert=FALSE)] <- "nonControlVocab"
+unique(df.controlVocab$domain)
+df.controlVocab$domain[grep("Regulatory so both health and Social sciences", df.controlVocab$domain, invert=FALSE)] <- "nonControlVocab"
+
+### plot registrant campus with count, color coded by registrant's role & domain ###
 ggplot(df.controlVocab, aes(y=location, fill = role))+
   geom_bar()+
   scale_fill_manual(values=unname(uc_colors)) + 
@@ -361,7 +367,19 @@ ggplot(df.controlVocab, aes(y=location, fill = role))+
 #  scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
   labs(y="Registrant Campus", x="Total Registration Count", fill="Registrant Role")
 
+ggplot(df.controlVocab, aes(y=location, fill = domain))+
+  geom_bar()+
+  scale_fill_manual(values=unname(uc_colors)) + 
+  #  geom_text(aes(label=total), vjust = 0.5, hjust = -.25)+
+  #  scale_y_discrete(expand = expansion(mult = c(0.1, .1))) +
+  #  scale_x_continuous(expand = expansion(mult = c(0.001, .07))) +
+  labs(y="Registrant Campus", x="Total Registration Count", fill="Registrant Domain")
 
+# controlled vocab because otherwise 30+ roles
+ggplot(df.controlVocab, aes(y=workshop, fill = role))+
+  geom_bar()+
+  scale_fill_manual(values=unname(uc_colors)) + 
+  labs(y="Workshop", x="Registration Count", fill="Registrant Role") 
 
 
 df.cvDedup <- data.frame(df.controlVocab[!duplicated(df.controlVocab$email),])
@@ -371,6 +389,30 @@ ggplot(df.cvDedup, aes(y=location, fill = role))+
   scale_fill_manual(values=unname(uc_colors)) + 
   labs(y="Registrant Campus", x="Deduplicated Registration Count", fill="Registrant Role")
 
+ggplot(df.cvDedup, aes(y=location, fill = domain))+
+  geom_bar()+
+  scale_fill_manual(values=unname(uc_colors)) + 
+  labs(y="Registrant Campus", x="Deduplicated Registration Count", fill="Registrant Domain")
+
+# workshop totals with color coded registrant domain
+ggplot(df.controlVocab, aes(y=workshop, fill = domain))+
+  geom_bar()+
+  scale_fill_manual(values=unname(uc_colors)) + 
+  labs(y="Workshop", x="Registration Count", fill="Registrant Domain") 
+
+# roles totals with color coded registrant domain
+ggplot(df.controlVocab, aes(y=role, fill = domain))+
+  geom_bar()+
+  scale_fill_manual(values=unname(uc_colors)) + 
+  labs(y="Registrant Role", x="Total Registration Count", fill="Registrant Domain") 
+
+# roles totals with color coded registrant domain
+ggplot(df.cvDedup, aes(y=role, fill = domain))+
+  geom_bar()+
+  scale_fill_manual(values=unname(uc_colors)) + 
+  labs(y="Registrant Role", x="Deduplicated Registrant Count", fill="Registrant Domain") 
+
+# colors matching, but wish this can sort in order
 
 
 #########################################################
